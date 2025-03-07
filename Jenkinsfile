@@ -4,10 +4,10 @@ def IMAGE_REGISTRY = "${OWNER}/${IMAGE_NAME}"
 def REGISTRY_CREDENTIALS = "docker_tokens"
 def REGISTRY_URL="index.docker.io"
 def GITHUB_CREDENTIALS = ""
-def GIT_BRANCH = 'staging'
-def CONFIG_REPO_URL = ''
+def BRANCH = 'staging'
+def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
 pipeline{
-    agent any 
+    agent { label 'ubuntu-22-04' }
     stages{
         stage('Checkout') {
             steps {
@@ -19,7 +19,7 @@ pipeline{
                 stage('Build Docker image'){
                     tools{
                         maven "MAVEN3.9"
-                        jdk 'JDK21'
+                        jdk 'JDK17'
                     }
                     steps{
                         sh 'mvn install'
@@ -27,14 +27,14 @@ pipeline{
                 }
                 stage('Build app images'){
                     steps{ 
-                        sh "docker build -t ${IMAGE_REGISTRY}:${env.BRANCH_NAME}-${env.GIT_COMMIT[0..6]} ."
+                        sh "docker build -t ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]} ."
                     }
                 }
                 stage('Push app images to Docker'){
                     steps{
                         withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}",usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]){
                             sh "echo ${REGISTRY_PASS} | docker login -u ${REGISTRY_USER} --password-stdin"
-                            sh "docker push ${IMAGE_REGISTRY}:${env.BRANCH_NAME}-${env.GIT_COMMIT[0..6]}"
+                            sh "docker push ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}"
                         }
                     }
                 }
@@ -42,7 +42,7 @@ pipeline{
                     stages{
                       stage("Clone Kustomize repo"){
                             steps{
-                                git branch: "${GIT_BRANCH}", url: "${CONFIG_REPO_URL}"
+                                git branch: "${BRANCH}", url: "${CONFIG_REPO_URL}"
                             }
                       }
                     //   stage("Update Image"){
