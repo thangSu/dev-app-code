@@ -44,9 +44,10 @@ pipeline{
                       stage("Clone Kustomize repo and config git"){
                             steps{
                                sh """
+                               test -d ${CONFIG_FOLDER} && rm -rf ${CONFIG_FOLDER}
                                git clone ${CONFIG_REPO_URL} ${CONFIG_FOLDER}
-                               git config --system user.name "Jenkins"
-                               git config --system user.email "phamthang3003@gmail.com"
+                               git config --global user.name "Jenkins"
+                               git config --global user.email "phamthang3003@gmail.com"
                                cat ${CONFIG_FOLDER}/base/app-deploy.yml
                                """
                             }
