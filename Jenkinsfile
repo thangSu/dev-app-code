@@ -6,6 +6,7 @@ def REGISTRY_URL="index.docker.io"
 def GITHUB_CREDENTIALS = ""
 def BRANCH = 'staging'
 def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
+def CONFIG_FOLDER = 'k8s-config'
 pipeline{
     agent { label 'ubuntu-22-04' }
     stages{
@@ -40,17 +41,16 @@ pipeline{
                 }
                 stage('Update Kustomize'){
                     stages{
-                      stage("Clone Kustomize repo"){
+                      stage("Clone Kustomize repo and config git"){
                             steps{
-                                git branch: "${BRANCH}", url: "${CONFIG_REPO_URL}"
+                               sh """
+                               git clone -b ${BRANCH} ${CONFIG_REPO_URL} ${CONFIG_FOLDER}
+                               git config --system user.name "Jenkins"
+                               git config --system user.email "phamthang3003@gmail.com"
+                               cat ${CONFIG_FOLDER}/base/app-deploy.yml
+                               """
                             }
                       }
-                      stage("config git"){
-                        steps{
-                            sh "cat dev-app-config/base/app-deploy.yml"
-                        }  
-                      }
-                      
                     }
                 }
             }
