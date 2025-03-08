@@ -6,7 +6,8 @@ def REGISTRY_URL="index.docker.io"
 def GITHUB_CREDENTIALS = ""
 def BRANCH = 'staging'
 def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
-def CONFIG_FOLDER = 'k8s-config'
+def CONFIG_FOLDER = '/tmp/k8s-config'
+def CONFIG_STAGING_FOLDER = '/tmp/k8s-config/overlays/staging/'
 pipeline{
     agent { label 'ubuntu-22-04' }
     stages{
@@ -17,7 +18,7 @@ pipeline{
         }
         stage('App image'){
             stages {
-                stage('Build Docker image'){
+                stage('Maven build'){
                     tools{
                         maven "MAVEN3.9"
                         jdk 'JDK17'
@@ -26,12 +27,12 @@ pipeline{
                         sh 'mvn install'
                     }
                 }
-                stage('Build app images'){
+                stage('Build dev-app images'){
                     steps{ 
                         sh "docker build -t ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]} ."
                     }
                 }
-                stage('Push app images to Docker'){
+                stage('Push dev-app images to Docker'){
                     steps{
                         withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}",usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]){
                             sh "echo ${REGISTRY_PASS} | docker login -u ${REGISTRY_USER} --password-stdin"
@@ -44,29 +45,41 @@ pipeline{
                       stage("Clone Kustomize repo and config git"){
                             steps{
                                sh """
-                               test -d ${CONFIG_FOLDER} && rm -rf ${CONFIG_FOLDER}
+                               test -d ${CONFIG_FOLDER} && rm -rf ${CONFIG_FOLDER} 
+                               ls /tmp
                                git clone ${CONFIG_REPO_URL} ${CONFIG_FOLDER}
-                               git config --global user.name "Jenkins"
-                               git config --global user.email "phamthang3003@gmail.com"
                                cat ${CONFIG_FOLDER}/base/app-deploy.yml
                                """
                             }
                       }
                       stage("Update app image tag"){
                         steps{
-                            sh """
-                            cd ${CONFIG_FOLDER}/overlays/staging
-                            kustomize edit set image thangsu/devops-lab=${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}
-                            cat kustomization.yml
-                            """
+                            dir (CONFIG_STAGING_FOLDER){
+                                sh """
+                                pwd
+                                kustomize edit set image thangsu/devops-lab=${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}
+                                git config --global user.name "Jenkins"
+                                git config --global user.email "phamthang3003@gmail.com"
+                                cat kustomization.yml
+                                """
+                            }
                         }
                       }
                       stage ("Create commit and push"){
                         steps{
-                            sh "echo ok"
+                            withCredentials([usernamePassword(credentialsId: 'github_secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]){
+                                dir(CONFIG_FOLDER) {
+                                    sh """
+                                    pwd
+                                    git add .
+                                    git commit -m "Jenkins bot: Update app tag to new ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}"
+                                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/thangSu/dev-app-config.git HEAD:main
+                                    """
+                                }
+                            }
                         }
-                      }
                     }
+                }
                 }
             }
         }
