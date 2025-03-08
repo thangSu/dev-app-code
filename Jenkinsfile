@@ -45,12 +45,12 @@ pipeline{
                                 git branch: "${BRANCH}", url: "${CONFIG_REPO_URL}"
                             }
                       }
-                    //   stage("Update Image"){
-                            
-                    //   }
-                    //   stage("Set git config"){
-
-                    //   }
+                      stage("config git"){
+                        steps{
+                            sh "cat dev-app-config/base/app-deploy.yml"
+                        }  
+                      }
+                      
                     }
                 }
             }
