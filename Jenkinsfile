@@ -44,12 +44,26 @@ pipeline{
                       stage("Clone Kustomize repo and config git"){
                             steps{
                                sh """
-                               git clone -b ${BRANCH} ${CONFIG_REPO_URL} ${CONFIG_FOLDER}
+                               git clone ${CONFIG_REPO_URL} ${CONFIG_FOLDER}
                                git config --system user.name "Jenkins"
                                git config --system user.email "phamthang3003@gmail.com"
                                cat ${CONFIG_FOLDER}/base/app-deploy.yml
                                """
                             }
+                      }
+                      stage("Update app image tag"){
+                        steps{
+                            sh """
+                            cd ${CONFIG_FOLDER}/overlays/staging
+                            kustomize edit set image thangsu/devops-lab=${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}
+                            cat kustomization.yml
+                            """
+                        }
+                      }
+                      stage ("Create commit and push"){
+                        steps{
+                            sh "echo ok"
+                        }
                       }
                     }
                 }
