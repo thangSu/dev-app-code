@@ -4,10 +4,10 @@ def IMAGE_REGISTRY = "${OWNER}/${IMAGE_NAME}"
 def REGISTRY_CREDENTIALS = "docker_tokens"
 def REGISTRY_URL="index.docker.io"
 def GITHUB_CREDENTIALS = "github_secret"
-def BRANCH = 'staging'
+def BRANCH = 'main'
 def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
 def CONFIG_FOLDER = '/tmp/k8s-config'
-def CONFIG_STAGING_FOLDER = '/tmp/k8s-config/overlays/staging/'
+def CONFIG_STAGING_FOLDER = '/tmp/k8s-config/overlays/prod/'
 pipeline{
     agent { label 'ubuntu-22-04' }
     stages{
