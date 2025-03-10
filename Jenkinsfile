@@ -3,7 +3,7 @@ def IMAGE_NAME = 'devops-lab'
 def IMAGE_REGISTRY = "${OWNER}/${IMAGE_NAME}"
 def REGISTRY_CREDENTIALS = "docker_tokens"
 def REGISTRY_URL="index.docker.io"
-def GITHUB_CREDENTIALS = ""
+def GITHUB_CREDENTIALS = "github_secret"
 def BRANCH = 'staging'
 def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
 def CONFIG_FOLDER = '/tmp/k8s-config'
@@ -67,7 +67,7 @@ pipeline{
                       }
                       stage ("Create commit and push"){
                         steps{
-                            withCredentials([usernamePassword(credentialsId: 'github_secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]){
+                            withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]){
                                 dir(CONFIG_FOLDER) {
                                     sh """
                                     pwd
