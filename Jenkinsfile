@@ -8,6 +8,15 @@ def BRANCH = 'staging'
 def CONFIG_REPO_URL = 'https://github.com/thangSu/dev-app-config.git'
 def CONFIG_FOLDER = '/tmp/k8s-config'
 def CONFIG_STAGING_FOLDER = '/tmp/k8s-config/overlays/staging/'
+def COLOR_MAP = [
+    'SUCCESS': 'good',
+    'FAILURE': 'danger',
+    'ABORTED': 'warning',
+    'UNSTABLE': 'warning',
+    'NOT_BUILT': 'warning'
+]
+
+
 pipeline{
     agent { label 'ubuntu-22-04' }
     stages{
@@ -84,4 +93,47 @@ pipeline{
             }
         }
     }
+    post {
+        always {
+            script {
+                echo "Slack Notifications"
+                // slackSend(
+                //     channel: '#ci-notifications',
+                //     color: "${COLOR_MAP[currentBuild.currentResult]}",
+                //     message: """ 
+                //     *Job:* `${env.JOB_NAME}`  
+                //     *Build Number:* `${env.BUILD_NUMBER}`  
+                //     *Status:* `${currentBuild.currentResult}`  
+                //     *Triggered By:* `${env.BUILD_USER}`  
+                //     *Branch:* `${env.GIT_BRANCH}`  
+                //     *Commit Hash:* `${env.GIT_COMMIT}`  
+                //     *Build Duration:* `${currentBuild.durationString}`  
+                //     *Jenkins URL:* <${env.BUILD_URL}|View Build>
+                //     """
+                // )
+                slackSend(
+                    channel: "#ci-notifications",
+                    attachments: """[
+                        {
+                            "title": "Jenkins Build Notification",
+                            "color": "${COLOR_MAP[currentBuild.currentResult]}",
+                            "fields": [
+                                { "title": "*Job*", "value": "`${env.JOB_NAME}`", "short": true },
+                                { "title": "*Build Number*", "value": "`${env.BUILD_NUMBER}`", "short": true },
+                                { "title": "*Status*", "value": "`${currentBuild.currentResult}`", "short": true },
+                                { "title": "*Triggered By*", "value": "`${env.BUILD_USER}`", "short": true },
+                                { "title": "*Branch*", "value": "`${env.GIT_BRANCH}`", "short": true },
+                                { "title": "*Commit*", "value": "`${env.GIT_COMMIT[0..6]}`", "short": true },
+                                { "title": "*Duration*", "value": "`${currentBuild.durationString}`", "short": true },
+                                { "title": "*Jenkins URL*", "value": "`<${env.BUILD_URL}|View Build>`", "short": false },
+                                { "title": "*Docker Image*", "value": "`${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]}`", "short": true }
+                            ]
+                        }
+                    ]"""
+                )
+            }
+            
+        }
+    }
 }
+
