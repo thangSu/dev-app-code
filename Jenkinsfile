@@ -40,7 +40,7 @@ pipeline{
                             echo "Maven build success"
                             archiveArtifacts artifacts: 'target/*.war', fingerprint: true
                         }
-                }
+                    }
                 }
                 stage('Code: Unit test'){
                     steps{
@@ -52,7 +52,37 @@ pipeline{
                         sh 'mvn verify -DskipTests'
                     }
                 }
-
+                stage('Code: analysis with checkstyle'){
+                    steps{
+                        sh 'mvn checkstyle:checkstyle'
+                    }
+                }
+                stage('SonarQube analysis'){
+                    environment {
+                        scannerHome = tool 'sonar_tool'
+                    }
+                    steps{
+                        withSonarQubeEnv('sonar_cloud') {
+                            sh '''${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=thang-devops_dev-app \
+                            -Dsonar.organization=thang-devops \
+                            -Dsonar.projectName=dev-app \
+                            -Dsonar.sources=src/ \
+                            -Dsonar.java.binaries=target/classes/com/visualpathit/account/controller/ \
+                            -Dsonar.jacoco.reportPaths=target/jacoco.exec \
+                            -Dsonar.junit.reportPaths=target/surefire-reports \
+                            -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+                            '''
+                        }
+                    }
+                }
+                stage('Quality Gate'){
+                    steps{
+                        timeout(time: 1, unit: 'HOURS') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
+                }
                 stage('Docker: Build dev-app images'){
                     steps{ 
                         sh "docker build -t ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]} ."
