@@ -26,22 +26,39 @@ pipeline{
             }
         }
         stage('App image'){
+            tools{
+                maven "MAVEN3.9"
+                jdk 'JDK17'
+            }
             stages {
-                stage('Maven build'){
-                    tools{
-                        maven "MAVEN3.9"
-                        jdk 'JDK17'
-                    }
+                stage('Code: Maven build'){
                     steps{
-                        sh 'mvn install'
+                        sh 'mvn clean install -DskipTests'
+                    }
+                    post{
+                        success{
+                            echo "Maven build success"
+                            archiveArtifacts artifacts: 'target/*.war', fingerprint: true
+                        }
+                }
+                }
+                stage('Code: Unit test'){
+                    steps{
+                        sh 'mvn test'
                     }
                 }
-                stage('Build dev-app images'){
+                stage('Code: Integration test'){
+                    steps{
+                        sh 'mvn verify -DskipTests'
+                    }
+                }
+
+                stage('Docker: Build dev-app images'){
                     steps{ 
                         sh "docker build -t ${IMAGE_REGISTRY}:${BRANCH}-${env.GIT_COMMIT[0..6]} ."
                     }
                 }
-                stage('Push dev-app images to Docker'){
+                stage('Docker: Push dev-app images'){
                     steps{
                         withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}",usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]){
                             sh "echo ${REGISTRY_PASS} | docker login -u ${REGISTRY_USER} --password-stdin"
